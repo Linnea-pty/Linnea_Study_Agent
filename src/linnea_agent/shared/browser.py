@@ -1,10 +1,12 @@
 import atexit
 import threading
+
 from playwright.sync_api import sync_playwright
 
 _local = threading.local()
 _registry: list[tuple] = []
 _lock = threading.Lock()
+
 
 def get_browser():
     b = getattr(_local, "browser", None)
@@ -16,6 +18,7 @@ def get_browser():
     with _lock:
         _registry.append((pw, b))
     return b
+
 
 @atexit.register
 def shutdown_browsers() -> None:

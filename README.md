@@ -93,15 +93,21 @@
 
 ## 目录结构
 
-项目采用 src 布局并按领域分包：
+项目采用 src 布局，源码位于 `src/linnea_agent/`，按领域分包并通过依赖注入组装：
 
 ```
-src/
-├── main.py       # 统一入口（启动 Web 或 CLI）
-├── agent/        # Agent 领域：组装模型、中间件与工具
-├── chat/         # 聊天领域：Controller、业务编排、路由与持久化
-├── tools/        # 工具领域：计算、时间、文件、网页与搜索
-└── shared/       # 共享基础设施：模型池、浏览器池、安全沙箱
+src/linnea_agent/
+├── __init__.py     # 公共 API 导出（Settings / ModelPool / build_agent）
+├── config.py       # Settings 集中配置（从环境变量加载）
+├── main.py         # 组合根与统一入口（启动 Web 或 CLI）
+├── agent/          # Agent 领域：组装模型、中间件与工具
+│   ├── builder.py      # build_agent 组装
+│   └── middleware.py   # 档位路由中间件
+├── chat/           # 聊天领域：Controller、业务编排、路由与持久化
+├── tools/          # 工具领域：计算、时间、文件、网页与搜索
+└── shared/         # 共享基础设施：模型池、浏览器池、安全沙箱
+
+tests/              # 单元测试（路由、沙箱、计算、历史、配置、模型池、Agent 组装）
 ```
 
 建议后续新增领域包：`academic/`（文献检索与引用）、`knowledge/`（知识图谱与 RAG）、`web_tutor/`（网页题目识别与解题辅助）、`observability/`（可观测性）。
@@ -126,6 +132,12 @@ DEEPSEEK_MODEL=deepseek-chat
 QWEN_API_KEY=sk-xxx
 QWEN_MODEL=qwen-flash
 TAVILY_API_KEY=tvly-xxx
+
+# 可选：工具开关与本地目录（均有默认值）
+ENABLE_WEBPAGE_TOOL=true
+ENABLE_SEARCH_TOOL=true
+AGENT_FILE_ROOT=./sandbox
+AGENT_HISTORY_DIR=./histories
 ```
 
 ## 使用指南
@@ -137,9 +149,17 @@ uv run linnea-agent-cli    # 启动 CLI 终端模式
 
 网页题目识别（规划中）：后续通过手动触发（浏览器扩展 / 书签脚本 / CDP 连接本地浏览器）读取当前活动页面，仅提取可见的题干、样例与图片，按三种模式给出学习辅助；编程题参考代码只在本地沙箱运行可见样例验证，不调用刷题平台提交接口。
 
+## 测试与代码质量
+
+```bash
+uv run pytest            # 运行单元测试
+uv run ruff check .      # 代码风格与静态检查
+uv run mypy src          # 类型检查
+```
+
 ## 架构与安全设计
 
-- **路由一致性**：通过 configurable 参数传递路由决策，保证中间件执行与 UI 展示的模型档位一致。
+- **路由一致性**：通过 `context_schema=AgentContext` 与运行期 `context=AgentContext(tier=...)` 传递档位，中间件按档位动态切换模型，保证中间件执行与 UI 展示的模型档位一致；目标档位缺 API Key 时自动降级到可用档位。
 - **历史记录安全**：显式类型映射表解析消息，临时文件 `os.replace` 原子写，杜绝历史损坏与上下文污染。
 - **沙箱隔离**：`read_local_file` 限制后缀与固定根目录，通过 resolve 阻断符号链接逃逸。
 - **安全计算**：使用 `ast` 语法树白名单实现数学计算，杜绝 eval 代码注入。
