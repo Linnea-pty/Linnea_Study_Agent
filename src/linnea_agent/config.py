@@ -29,6 +29,12 @@ class Settings:
     # 工具开关
     enable_webpage_tool: bool
     enable_search_tool: bool
+    enable_academic_tool: bool
+    # 模型调用韧性
+    model_timeout: float
+    model_max_retries: int
+    # 成本预算（美元，0 表示不限）
+    budget_limit: float
     # 沙箱与历史目录
     file_root: Path
     history_dir: Path
@@ -41,16 +47,18 @@ class Settings:
             deepseek_api_key=_env("DEEPSEEK_API_KEY"),
             deepseek_model=_env("DEEPSEEK_MODEL", "deepseek-chat"),
             deepseek_base_url=_env("DEEPSEEK_BASE_URL", "https://api.deepseek.com"),
-
             qwen_api_key=_env("QWEN_API_KEY"),
             qwen_model=_env("QWEN_MODEL", "qwen-flash"),
             qwen_base_url=_env(
-                "QWEN_BASE_URL", "https://dashscope.aliyuncs.com/compatible-mode/v1"),
-
+                "QWEN_BASE_URL", "https://dashscope.aliyuncs.com/compatible-mode/v1"
+            ),
             tavily_api_key=_env("TAVILY_API_KEY"),
             enable_webpage_tool=_as_bool(_env("ENABLE_WEBPAGE_TOOL", "true")),
             enable_search_tool=_as_bool(_env("ENABLE_SEARCH_TOOL", "true")),
-
+            enable_academic_tool=_as_bool(_env("ENABLE_ACADEMIC_TOOL", "true")),
+            model_timeout=float(_env("MODEL_TIMEOUT", "60")),
+            model_max_retries=int(_env("MODEL_MAX_RETRIES", "2")),
+            budget_limit=float(_env("BUDGET_LIMIT", "0")),
             file_root=Path(_env("AGENT_FILE_ROOT", str(PROJECT_ROOT / "sandbox"))),
             history_dir=Path(_env("AGENT_HISTORY_DIR", str(PROJECT_ROOT / "histories"))),
         )

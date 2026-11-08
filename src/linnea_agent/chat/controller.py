@@ -14,11 +14,11 @@ class ChatController:
     def handle_chat(self, message: str, history: list, session_id: str = "web"):
         if not message.strip():
             return history, ""
-        reply, tier = self.service.run_turn(message, session_id)
+        result = self.service.run_turn(message, session_id)
         history.append({"role": "user", "content": message})
-        history.append({"role": "assistant", "content": reply})
-        return history, f"本轮路由：**{tier}**"
+        history.append({"role": "assistant", "content": result.reply})
+        return history, f"本轮路由：**{result.tier.value}**"
 
     def handle_cli(self, task: str) -> None:
-        reply, tier = self.service.run_turn(task, session_id="cli")
-        print(f"\n[路由档位: {tier}]\n{reply}")
+        result = self.service.run_turn(task, session_id="cli")
+        print(f"\n[路由档位: {result.tier.value}]\n{result.reply}")

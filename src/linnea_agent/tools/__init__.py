@@ -25,6 +25,13 @@ def build_tools(settings: Settings) -> list[BaseTool]:
         build_read_local_file_tool(settings),
     ]
 
+    if settings.enable_academic_tool:
+        from linnea_agent.academic.tool import search_papers
+
+        tools.append(search_papers)
+    else:
+        log.info("search_papers 工具已按配置禁用")
+
     if settings.enable_webpage_tool:
         tools.append(read_webpage)
     else:

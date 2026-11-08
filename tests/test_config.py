@@ -23,3 +23,14 @@ def test_from_env_reads_env_values(monkeypatch):
     assert settings.enable_webpage_tool is False
     assert isinstance(settings.file_root, Path)
     assert isinstance(settings.history_dir, Path)
+
+
+def test_from_env_defaults(monkeypatch):
+    for name in ("MODEL_TIMEOUT", "MODEL_MAX_RETRIES", "BUDGET_LIMIT", "ENABLE_ACADEMIC_TOOL"):
+        monkeypatch.delenv(name, raising=False)
+    settings = Settings.from_env()
+
+    assert settings.model_timeout == 60.0
+    assert settings.model_max_retries == 2
+    assert settings.budget_limit == 0.0
+    assert settings.enable_academic_tool is True

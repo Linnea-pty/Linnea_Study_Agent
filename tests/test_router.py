@@ -1,7 +1,7 @@
 """意图路由测试。"""
 
-from linnea_agent.chat.models import Tier
 from linnea_agent.chat.router import decide_tier
+from linnea_agent.shared.tier import Tier
 
 
 def test_coding_goes_balanced():

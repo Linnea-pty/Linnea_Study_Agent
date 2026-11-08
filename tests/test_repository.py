@@ -2,7 +2,7 @@
 
 from langchain_core.messages import AIMessage, HumanMessage
 
-from linnea_agent.chat.repository import HistoryRepository
+from linnea_agent.chat.history import HistoryRepository
 
 
 def test_round_trip(tmp_path):
@@ -10,7 +10,7 @@ def test_round_trip(tmp_path):
     repo.save("web", [HumanMessage(content="你好"), AIMessage(content="你好！")])
 
     loaded = repo.load("web")
-    assert [m.content for m in loaded] == ["你好", "你好！"]
+    assert [message.content for message in loaded] == ["你好", "你好！"]
     assert isinstance(loaded[0], HumanMessage)
     assert isinstance(loaded[1], AIMessage)
 

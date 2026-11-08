@@ -7,11 +7,13 @@ import logging
 import os
 from pathlib import Path
 
-from langchain_core.messages import BaseMessage
-
-from linnea_agent.chat.models import PERSIST_ROLES, ROLE_TO_CLS, role_of
+from langchain_core.messages import AIMessage, BaseMessage, HumanMessage
 
 log = logging.getLogger(__name__)
+
+# 仅持久化 user / assistant 两类消息
+_ROLE_TO_CLS: dict[str, type[BaseMessage]] = {"user": HumanMessage, "assistant": AIMessage}
+_CLS_TO_ROLE: dict[type[BaseMessage], str] = {cls: role for role, cls in _ROLE_TO_CLS.items()}
 
 
 class HistoryRepository:
@@ -36,19 +38,17 @@ class HistoryRepository:
 
         messages: list[BaseMessage] = []
         for item in raw:
-            cls = ROLE_TO_CLS.get(item.get("role"))
-            if cls is None:
-                continue
-            messages.append(cls(content=item.get("content", "")))
+            cls = _ROLE_TO_CLS.get(item.get("role"))
+            if cls is not None:
+                messages.append(cls(content=item.get("content", "")))
         return messages
 
     def save(self, session_id: str, messages: list[BaseMessage]) -> None:
         serializable = []
         for message in messages:
-            role = role_of(message)
-            if role not in PERSIST_ROLES:
-                if role is None:
-                    log.warning("未知消息类型 %s，已跳过", type(message).__name__)
+            role = _CLS_TO_ROLE.get(type(message))
+            if role is None:
+                log.warning("不持久化的消息类型 %s，已跳过", type(message).__name__)
                 continue
             serializable.append({"role": role, "content": message.content})
 

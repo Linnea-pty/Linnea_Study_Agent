@@ -7,9 +7,10 @@ import sys
 
 from linnea_agent.agent.builder import build_agent
 from linnea_agent.chat.controller import ChatController
-from linnea_agent.chat.repository import HistoryRepository
+from linnea_agent.chat.history import HistoryRepository
 from linnea_agent.chat.service import ChatService
 from linnea_agent.config import Settings
+from linnea_agent.observability.usage import UsageTracker
 
 
 def build_controller(settings: Settings | None = None) -> ChatController:
@@ -17,7 +18,8 @@ def build_controller(settings: Settings | None = None) -> ChatController:
     settings = settings or Settings.from_env()
     agent = build_agent(settings)
     repo = HistoryRepository(settings.history_dir)
-    return ChatController(ChatService(agent, repo))
+    tracker = UsageTracker(settings.budget_limit)
+    return ChatController(ChatService(agent, repo, tracker))
 
 
 def _configure_logging() -> None:
