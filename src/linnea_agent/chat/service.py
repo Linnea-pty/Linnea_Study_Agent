@@ -44,8 +44,25 @@ class ChatService:
             context=AgentContext(tier=tier),
             config=config,
         )
-        reply = result["messages"][-1].content
+        reply = _content_text(result["messages"][-1].content)
+        if not reply:
+            reply = "（模型没有返回内容，请重试。）"
 
         messages.append(AIMessage(content=reply))
         self.repo.save(session_id, messages)
         return TurnResult(reply=reply, tier=tier)
+
+
+def _content_text(content: object) -> str:
+    """把模型返回的 content（字符串或多模态块列表）统一成文本。"""
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        parts: list[str] = []
+        for item in content:
+            if isinstance(item, str):
+                parts.append(item)
+            elif isinstance(item, dict) and item.get("type") == "text":
+                parts.append(str(item.get("text", "")))
+        return "".join(parts)
+    return "" if content is None else str(content)

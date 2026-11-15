@@ -37,6 +37,13 @@ def build_tools(settings: Settings) -> list[BaseTool]:
     else:
         log.info("read_webpage 工具已按配置禁用")
 
+    if settings.enable_web_tutor_tool:
+        from linnea_agent.web_tutor.tool import build_read_problem_tool
+
+        tools.append(build_read_problem_tool(settings))
+    else:
+        log.info("read_problem 工具已按配置禁用")
+
     if settings.enable_search_tool and settings.tavily_api_key:
         from langchain_tavily import TavilySearch
 

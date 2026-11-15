@@ -22,3 +22,22 @@ def test_run_turn_round_trip(tmp_path):
 
     loaded = HistoryRepository(tmp_path).load("web")
     assert [message.content for message in loaded] == ["你好", "你好！"]
+
+
+class ListContentAgent:
+    def invoke(self, input, context=None, config=None):
+        return {
+            "messages": [
+                AIMessage(
+                    content=[
+                        {"type": "text", "text": "第一段"},
+                        {"type": "text", "text": "第二段"},
+                    ]
+                )
+            ]
+        }
+
+
+def test_run_turn_flattens_content_blocks(tmp_path):
+    service = ChatService(ListContentAgent(), HistoryRepository(tmp_path), UsageTracker())
+    assert service.run_turn("你好", "web").reply == "第一段第二段"

@@ -5,3 +5,11 @@
 __pycache__/
 *.py[cod]
 .idea/
+# 测试与工具临时产物
+.pytest_cache/
+pytest-of-*/
+pytest-cache-files-*
+.tmp_tests/
+.smoke_problem.html
+.tmp/
+.playwright/

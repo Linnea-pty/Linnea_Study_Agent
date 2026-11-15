@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import logging
+import os
 import sys
+import urllib.request
 
 from linnea_agent.agent.builder import build_agent
 from linnea_agent.chat.controller import ChatController
@@ -26,7 +28,27 @@ def _configure_logging() -> None:
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
 
 
+def _sanitize_proxy_bypass() -> None:
+    """清理 NO_PROXY 中 httpx 无法解析的 IPv6 方括号项，避免 Gradio 导入失败。
+
+    Windows 系统代理例外列表常含 ``[::1]``，httpx 会把它当成非法端口
+    （``Invalid port: ':1]'``），导致 ``import gradio`` 直接抛错。
+    """
+    raw = os.environ.get("NO_PROXY") or os.environ.get("no_proxy")
+    if not raw:
+        raw = str(urllib.request.getproxies().get("no", ""))
+    entries = [
+        item.strip()
+        for item in raw.split(",")
+        if item.strip() and not item.strip().startswith("[")
+    ]
+    value = ",".join(entries)
+    os.environ["NO_PROXY"] = value
+    os.environ["no_proxy"] = value
+
+
 def run_web() -> None:
+    _sanitize_proxy_bypass()
     import gradio as gr
 
     _configure_logging()
@@ -34,15 +56,16 @@ def run_web() -> None:
 
     with gr.Blocks(title="多模型Agent") as demo:
         gr.Markdown("# Linnea 的多模型个人 Agent")
-        chatbot = gr.Chatbot()
+        chatbot = gr.Chatbot(height=620)
         msg = gr.Textbox(placeholder="输入你的问题...", label="消息")
         tier_md = gr.Markdown()
         clear = gr.Button("清空会话")
 
-        msg.submit(controller.handle_chat, [msg, chatbot], [chatbot, tier_md])
+        msg.submit(controller.handle_chat_stream, [msg, chatbot], [chatbot, tier_md])
         msg.submit(lambda: "", None, msg)
         clear.click(lambda: ([], "", ""), None, [chatbot, msg, tier_md])
 
+    demo.queue()
     demo.launch()
 
 
