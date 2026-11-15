@@ -3,11 +3,24 @@
 from __future__ import annotations
 
 import logging
+import re
 from collections.abc import Iterator
 
 from linnea_agent.chat.service import ChatService
 
 log = logging.getLogger(__name__)
+
+# Gradio 6.31 的 Prism 在渲染 ```c / ```cpp 代码块时会抛
+# TypeError: Cannot set properties of undefined (setting 'class-name')，
+# 前端因此永久停在“正在思考…”。展示时去掉语言标记，代码内容与排版不受影响。
+_BROKEN_PRISM_LANGS = re.compile(
+    r"```(?:c|cpp|c\+\+|cc|h|hpp)[ \t]*\r?\n", re.IGNORECASE
+)
+
+
+def _display_text(text: str) -> str:
+    """返回适合 Gradio 展示的文本（仅影响前端，不改变持久化历史）。"""
+    return _BROKEN_PRISM_LANGS.sub("```\n", text)
 
 
 class ChatController:
@@ -22,7 +35,7 @@ class ChatController:
             return history, ""
         result = self.service.run_turn(message, session_id)
         history.append({"role": "user", "content": message})
-        history.append({"role": "assistant", "content": result.reply})
+        history.append({"role": "assistant", "content": _display_text(result.reply)})
         return history, f"本轮路由：**{result.tier.value}**"
 
     def handle_chat_stream(
@@ -46,7 +59,7 @@ class ChatController:
             yield _snapshot(history), ""
             return
 
-        history[-1]["content"] = result.reply
+        history[-1]["content"] = _display_text(result.reply)
         yield _snapshot(history), f"本轮路由：**{result.tier.value}**"
 
     def handle_cli(self, task: str) -> None:

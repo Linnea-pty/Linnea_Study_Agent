@@ -44,3 +44,21 @@ def test_stream_ignores_blank_message():
     frames = list(controller.handle_chat_stream("   ", []))
 
     assert frames == [([], "")]
+
+
+def test_cpp_fence_is_downgraded_for_display():
+    reply = "```cpp\n#include <iostream>\nint main() {}\n```\n\n```python\nprint(1)\n```"
+    controller = ChatController(FakeService(reply=reply))
+    frames = list(controller.handle_chat_stream("做题", []))
+
+    final = frames[-1][0][-1]["content"]
+    assert final.startswith("```\n#include <iostream>")
+    assert "```cpp" not in final
+    assert "```python" in final
+
+
+def test_plain_c_fence_is_downgraded_case_insensitively():
+    controller = ChatController(FakeService(reply="```C\nint main() {}\n```"))
+    frames = list(controller.handle_chat_stream("做题", []))
+
+    assert frames[-1][0][-1]["content"] == "```\nint main() {}\n```"

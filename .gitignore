@@ -13,3 +13,5 @@ pytest-cache-files-*
 .smoke_problem.html
 .tmp/
 .playwright/
+.mypy_cache/
+.ruff_cache/
