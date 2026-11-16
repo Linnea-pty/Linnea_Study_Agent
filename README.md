@@ -6,7 +6,14 @@
 
 ## 版本演进
 
-### v0.4.1（当前）
+### v0.5.0（当前）
+
+- **全新 Vue 3 前端**：新增 `web/`（Vue 3 + Vite + TypeScript），深绿侧栏 + 暖白内容区的阅读型布局，支持 Markdown、代码高亮、表格、流式“正在思考”状态与错误提示，替换 Gradio 的默认界面。
+- **FastAPI 接口层**：新增 `src/linnea_agent/api/`，`POST /api/chat/stream` 通过 SSE 返回 `status` / `done` / `error` 事件，`GET /api/health` 提供健康检查；复用 `ChatService`，Gradio 保留为回退入口。
+- **构建与部署**：开发期 Vite 将 `/api` 代理到 8000；生产由 FastAPI 托管 `web/dist`，单端口访问。
+- **工程化**：前端工具链为 Node.js 26 + pnpm；测试增至 60 例（新增 4 例 API 测试）。
+
+### v0.4.1
 
 相比 v0.4.0 的修复：
 
@@ -44,7 +51,7 @@
 
 ## 项目状态
 
-- 当前版本：v0.4.1
+- 当前版本：v0.5.0
 - 状态：开发中 / 实验性项目
 - 适用场景：学习与实践大模型 Agent 的底层架构、工具调用与路由机制，服务于学生学术实践与刷题学习辅助场景。
 
@@ -53,7 +60,8 @@
 - **动态模型路由**：按输入意图（代码 / 推理 / 简单问答）自动路由至 DeepSeek、Qwen 等模型，平衡成本与效果。
 - **丰富的工具生态**：内置数学计算、时间查询、Tavily 联网搜索、Playwright 网页抓取、沙箱文件读取、学术论文检索等能力。
 - **完善的会话记忆**：Web 端与 CLI 端独立历史记录，支持多轮对话并持久化到本地。
-- **双端启动**：同时提供 Gradio Web 界面与 CLI 命令行交互。
+- **多端启动**：提供 Vue 3 现代 Web 界面（推荐）、Gradio 回退界面与 CLI 命令行交互。
+- **现代化 Web 界面**：Vue 3 单页应用，支持流式状态、Markdown 与代码高亮、响应式布局，由 FastAPI 的 SSE 接口驱动。
 - **安全优先**：在计算、文件读取、网页抓取等环节内置沙箱与防护机制。
 - **可观测性与成本控制**：自动累计每次调用的 token 与成本，支持预算熔断。
 - **学术检索与引用**：多源检索（arXiv / Semantic Scholar / OpenAlex）聚合去重，支持 GB/T 7714、APA、MLA 引用生成。
@@ -111,7 +119,7 @@
 - [ ] 操作审计日志
 
 ### 工程化与可观测性
-- [x] 多端支持（Gradio Web + CLI）、会话历史持久化与原子写入
+- [x] 多端支持（Vue Web + Gradio + CLI）、会话历史持久化与原子写入
 - [x] token / 成本用量追踪与预算熔断
 - [x] 路由准确率离线评估集
 - [ ] 全链路 Trace（Langfuse / OpenTelemetry）
@@ -119,7 +127,7 @@
 
 ## 技术栈
 
-**当前**：uv（环境管理）、LangChain / LangGraph（核心框架）、ChatOpenAI（兼容 DeepSeek、通义千问）、Gradio（前端）、Playwright / langchain-tavily（网页解析与搜索）、arXiv / Semantic Scholar / OpenAlex API（学术检索）、标准库 urllib（HTTP 客户端，零额外依赖）。
+**当前**：uv（环境管理）、LangChain / LangGraph（核心框架）、ChatOpenAI（兼容 DeepSeek、通义千问）、FastAPI + SSE（接口层）、Vue 3 + Vite + TypeScript（前端）、Gradio（回退前端）、Playwright / langchain-tavily（网页解析与搜索）、arXiv / Semantic Scholar / OpenAlex API（学术检索）、标准库 urllib（HTTP 客户端，零额外依赖）。
 
 **面向后续能力的推荐补充**：
 
@@ -151,11 +159,13 @@ src/linnea_agent/
 ├── academic/          # 学术检索领域：多源检索、聚合去重、引用生成
 │   └── sources/           # arXiv / Semantic Scholar / OpenAlex 数据源
 ├── web_tutor/         # 网页题目识别：页面读取、DOM 解析、站点适配、模式输出
+├── api/               # HTTP 接口层：FastAPI 应用工厂、SSE 聊天路由
 ├── observability/     # 可观测性：用量追踪、成本估算、回调埋点
 ├── evaluation/        # 离线评估体系：路由准确率等
 ├── tools/             # 工具领域：计算、时间、文件、网页、检索
 └── shared/            # 共享基础设施：模型池、档位枚举、HTTP、沙箱、浏览器
 
+web/                   # Vue 3 + Vite + TypeScript 前端（独立构建）
 tests/                 # 单元 + 集成测试
 ```
 
@@ -171,6 +181,12 @@ uv sync
 
 # 2. 安装 Playwright Chromium 内核
 uv run playwright install chromium
+
+# 3. 构建前端（需 Node.js 26+ 与 pnpm；首次使用先 npm install -g pnpm）
+cd web
+pnpm install
+pnpm build
+cd ..
 
 # 若 Windows 系统目录不可写（报 EPERM: mkdir ...ms-playwright），改装到项目内：
 # PowerShell:
@@ -211,8 +227,18 @@ ALLOW_FULL_ANSWER=true
 ## 使用指南
 
 ```bash
-uv run linnea-agent        # 启动 Gradio Web（默认 http://127.0.0.1:7860）
+uv run linnea-agent-api    # Vue 前端 + API（默认 http://127.0.0.1:8000）
+uv run linnea-agent        # 旧版 Gradio 界面（默认 http://127.0.0.1:7860）
 uv run linnea-agent-cli    # 启动 CLI 终端模式
+```
+
+前端开发模式（Vite 热更新）：
+
+```bash
+# 终端 1：API
+uv run uvicorn linnea_agent.api.app:create_app --factory --port 8000
+# 终端 2：前端
+cd web && pnpm dev          # http://127.0.0.1:5173，/api 自动代理到 8000
 ```
 
 网页题目识别：在对话中调用 `read_problem` 工具，`url` 留空时通过 CDP 读取当前活动标签页，也可直接传入题目 URL；`mode` 支持 `full`（默认，直接给出完整解答/代码）、`steps`、`hint`。只读可见内容，不点击、不提交；不需要完整答案时可设置 `ALLOW_FULL_ANSWER=false`。示例：
@@ -225,9 +251,10 @@ https://pintia.cn/problem-sets/.../exam/problems/type/7?problemSetProblemId=...
 ## 测试与代码质量
 
 ```bash
-uv run pytest            # 运行单元测试
-uv run ruff check src tests  # 代码风格与静态检查
-uv run mypy src          # 类型检查
+uv run pytest                 # 运行单元测试
+uv run ruff check src tests   # 代码风格与静态检查
+uv run mypy src               # 类型检查
+cd web && pnpm build          # 前端类型检查 + 生产构建
 ```
 
 ## 架构与安全设计
@@ -261,6 +288,8 @@ uv run mypy src          # 类型检查
 - **Playwright 报 EPERM / mkdtemp**：系统 Temp 目录不可写。程序会自动回退到项目内 `.tmp/playwright`；若仍失败，请检查 Windows「受控文件夹访问」或杀毒软件对 Temp 的限制，并确认项目目录可写。
 - **如何识别当前 PTA 题目**：通过手动触发读取当前活动页面，仅提取可见内容，不后台抓取、不自动提交；使用前请确认符合平台条款与学校规范。
 - **会直接给最终答案吗**：默认直接给出完整解答/代码（`ALLOW_FULL_ANSWER=true`）；设为 `false` 可强制只给提示或分步解析。代码只生成、不自动提交。
+- **Vue 页面空白 / 404**：先执行 `cd web && pnpm install && pnpm build`；生产模式由 FastAPI 托管 `web/dist`，构建产物不存在时根路径不会注册。
+- **前端开发时接口 404**：确认 API 已监听 `127.0.0.1:8000`；`pnpm dev` 会把 `/api` 代理到该端口。
 
 ## 贡献
 

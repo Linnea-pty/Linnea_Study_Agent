@@ -15,3 +15,7 @@ pytest-cache-files-*
 .playwright/
 .mypy_cache/
 .ruff_cache/
+# 前端依赖与构建产物
+web/node_modules/
+web/dist/
+web/.vite/
