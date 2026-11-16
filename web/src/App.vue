@@ -3,7 +3,7 @@ import { computed, nextTick, onMounted, ref, watch } from "vue";
 import MessageItem from "./components/MessageItem.vue";
 import { useChat } from "./composables/useChat";
 
-const { messages, sending, tier, error, send, clear, restore } = useChat();
+const { messages, sending, tier, error, send, clear } = useChat();
 
 const draft = ref("");
 const scroller = ref<HTMLElement | null>(null);
@@ -79,7 +79,6 @@ watch(() => messages.value.map((message) => message.content.length).join(","), s
 watch(draft, () => void nextTick(resize));
 onMounted(() => {
   textarea.value?.focus();
-  void restore();
 });
 </script>
 
@@ -122,7 +121,7 @@ onMounted(() => {
 
       <div class="sidebar-note">
         <p class="sidebar-label">最近</p>
-        <p class="empty-note">对话保存在本地，随时续聊。</p>
+        <p class="empty-note">对话记录保存在本机，不会上传。</p>
       </div>
 
       <div class="sidebar-foot">

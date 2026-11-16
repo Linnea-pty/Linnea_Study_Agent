@@ -38,6 +38,11 @@ export function useChat() {
   const tier = ref("");
   const error = ref("");
   let nextId = 1;
+  let sessionId = newSessionId();
+
+  function newSessionId(): string {
+    return `web-${Date.now().toString(36)}`;
+  }
 
   async function send(text: string): Promise<void> {
     const trimmed = text.trim();
@@ -54,7 +59,7 @@ export function useChat() {
       const response = await fetch("/api/chat/stream", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: trimmed, session_id: "web" }),
+        body: JSON.stringify({ message: trimmed, session_id: sessionId }),
       });
       if (!response.ok || !response.body) {
         throw new Error(`请求失败（HTTP ${response.status}）`);
@@ -103,25 +108,8 @@ export function useChat() {
     messages.value = [];
     tier.value = "";
     error.value = "";
+    sessionId = newSessionId();
   }
 
-  async function restore(): Promise<void> {
-    try {
-      const response = await fetch("/api/history/web");
-      if (!response.ok) return;
-      const data = (await response.json()) as {
-        messages?: Array<{ role: string; content: string }>;
-      };
-      if (!data.messages?.length) return;
-      messages.value = data.messages.map((item) => ({
-        id: nextId++,
-        role: item.role === "assistant" ? "assistant" : "user",
-        content: item.content,
-      }));
-    } catch {
-      // 历史读取失败不应阻断新对话
-    }
-  }
-
-  return { messages, sending, tier, error, send, clear, restore };
+  return { messages, sending, tier, error, send, clear };
 }

@@ -8,10 +8,10 @@
 
 ### v0.5.0（当前）
 
-- **全新 Vue 3 前端**：新增 `web/`（Vue 3 + Vite + TypeScript），深绿侧栏 + 暖白内容区的阅读型布局，支持 Markdown、代码高亮、表格、流式“正在思考”状态与错误提示，替换 Gradio 的默认界面。
-- **FastAPI 接口层**：新增 `src/linnea_agent/api/`，`POST /api/chat/stream` 通过 SSE 返回 `status` / `done` / `error` 事件，`GET /api/health` 提供健康检查；复用 `ChatService`，Gradio 保留为回退入口。
+- **全新 Vue 3 前端**：新增 `web/`（Vue 3 + Vite + TypeScript），深绿侧栏 + 暖白内容区的阅读型布局，支持 Markdown、代码高亮、表格、流式“正在思考”状态与错误提示；旧版 Gradio 界面已删除，Vue 成为唯一 Web 前端。
+- **FastAPI 接口层**：新增 `src/linnea_agent/api/`，`POST /api/chat/stream` 通过 SSE 返回 `status` / `done` / `error` 事件，`GET /api/health` 提供健康检查；复用 `ChatService`。
 - **构建与部署**：开发期 Vite 将 `/api` 代理到 8000；生产由 FastAPI 托管 `web/dist`，单端口访问。
-- **工程化**：前端工具链为 Node.js 26 + pnpm；测试增至 60 例（新增 4 例 API 测试）。
+- **工程化**：前端工具链为 Node.js 26 + pnpm；测试 55 例（新增 4 例 API 测试，移除旧 Gradio 控制器测试）。
 
 ### v0.4.1
 
@@ -20,7 +20,7 @@
 - **解题行为**：系统提示词明确“读题后必须作答”；用户说“做这个题 / 生成代码”时用 `full` 模式直接给出可提交代码，不再复述题面或只给步骤。`read_problem` 的默认模式改为 `full`。
 - **PTA 真实页面适配**：支持 `div.rendered-markdown` 题面与 CodeMirror 样例（`div[data-code]` / `.cm-line`），修正标题带站点后缀、题干混入样例、限制字段为空的问题；题干中的代码块（如数字拼音对照表）会保留。
 - **完整答案默认开启**：`ALLOW_FULL_ANSWER` 默认 `true`（个人学习用途），可设为 `false` 强制只给提示/分步；“不自动提交”等合规约束不变。
-- **Web 界面反馈**：Gradio 改为流式回显，先显示“正在思考…”再替换为回答；单轮异常转为可见错误信息，避免看起来“没有反应”。修复 Gradio 6.31.0 的 Prism 在渲染 C/C++ 代码块时崩溃、导致消息永久停在“正在思考…”的问题（仅在展示层去掉 C/C++ 语言标记，历史记录保持原样）。
+- **Web 界面反馈**：旧版 Gradio 界面（已在 v0.5.0 移除）改为流式回显，先显示“正在思考…”再替换为回答；单轮异常转为可见错误信息，避免看起来“没有反应”。
 - **Windows 代理兼容**：启动 Web 前清理 `NO_PROXY` 中 httpx 无法解析的 `[::1]`，避免 Gradio 导入时报 `Invalid port: ':1]'`。
 - **健壮性**：模型返回多模态 `content` 时统一拼接为文本；退出时忽略浏览器跨线程回收异常；新增 10 例测试，总计 56 例（含 3 个 PTA 真实页面端到端验证）。
 
@@ -60,7 +60,7 @@
 - **动态模型路由**：按输入意图（代码 / 推理 / 简单问答）自动路由至 DeepSeek、Qwen 等模型，平衡成本与效果。
 - **丰富的工具生态**：内置数学计算、时间查询、Tavily 联网搜索、Playwright 网页抓取、沙箱文件读取、学术论文检索等能力。
 - **完善的会话记忆**：Web 端与 CLI 端独立历史记录，支持多轮对话并持久化到本地。
-- **多端启动**：提供 Vue 3 现代 Web 界面（推荐）、Gradio 回退界面与 CLI 命令行交互。
+- **多端启动**：Vue 3 现代 Web 界面 + CLI 命令行交互。
 - **现代化 Web 界面**：Vue 3 单页应用，支持流式状态、Markdown 与代码高亮、响应式布局，由 FastAPI 的 SSE 接口驱动。
 - **安全优先**：在计算、文件读取、网页抓取等环节内置沙箱与防护机制。
 - **可观测性与成本控制**：自动累计每次调用的 token 与成本，支持预算熔断。
@@ -119,7 +119,7 @@
 - [ ] 操作审计日志
 
 ### 工程化与可观测性
-- [x] 多端支持（Vue Web + Gradio + CLI）、会话历史持久化与原子写入
+- [x] 多端支持（Vue Web + CLI）、会话历史持久化与原子写入
 - [x] token / 成本用量追踪与预算熔断
 - [x] 路由准确率离线评估集
 - [ ] 全链路 Trace（Langfuse / OpenTelemetry）
@@ -127,7 +127,7 @@
 
 ## 技术栈
 
-**当前**：uv（环境管理）、LangChain / LangGraph（核心框架）、ChatOpenAI（兼容 DeepSeek、通义千问）、FastAPI + SSE（接口层）、Vue 3 + Vite + TypeScript（前端）、Gradio（回退前端）、Playwright / langchain-tavily（网页解析与搜索）、arXiv / Semantic Scholar / OpenAlex API（学术检索）、标准库 urllib（HTTP 客户端，零额外依赖）。
+**当前**：uv（环境管理）、LangChain / LangGraph（核心框架）、ChatOpenAI（兼容 DeepSeek、通义千问）、FastAPI + SSE（接口层）、Vue 3 + Vite + TypeScript（前端）、Playwright / langchain-tavily（网页解析与搜索）、arXiv / Semantic Scholar / OpenAlex API（学术检索）、标准库 urllib（HTTP 客户端，零额外依赖）。
 
 **面向后续能力的推荐补充**：
 
@@ -155,7 +155,7 @@ src/linnea_agent/
 ├── agent/             # Agent 领域：组装模型、中间件与工具
 │   ├── builder.py         # build_agent 组装
 │   └── middleware.py      # 档位路由中间件
-├── chat/              # 聊天领域：路由、历史、编排、接口适配
+├── chat/              # 聊天领域：路由、历史、编排
 ├── academic/          # 学术检索领域：多源检索、聚合去重、引用生成
 │   └── sources/           # arXiv / Semantic Scholar / OpenAlex 数据源
 ├── web_tutor/         # 网页题目识别：页面读取、DOM 解析、站点适配、模式输出
@@ -182,7 +182,8 @@ uv sync
 # 2. 安装 Playwright Chromium 内核
 uv run playwright install chromium
 
-# 3. 构建前端（需 Node.js 26+ 与 pnpm；首次使用先 npm install -g pnpm）
+# 3. 构建前端（需 Node.js 26+ 与 pnpm）
+npm install -g pnpm
 cd web
 pnpm install
 pnpm build
@@ -227,10 +228,12 @@ ALLOW_FULL_ANSWER=true
 ## 使用指南
 
 ```bash
-uv run linnea-agent-api    # Vue 前端 + API（默认 http://127.0.0.1:8000）
-uv run linnea-agent        # 旧版 Gradio 界面（默认 http://127.0.0.1:7860）
+uv run linnea-agent        # Vue 前端 + API（默认 http://127.0.0.1:8000）
 uv run linnea-agent-cli    # 启动 CLI 终端模式
+# 也可在 IDE 中直接运行 src/linnea_agent/main.py，效果相同
 ```
+
+`linnea-agent-api` 与 `linnea-agent` 等价，保留作为显式 API 启动别名。
 
 前端开发模式（Vite 热更新）：
 
@@ -289,6 +292,7 @@ cd web && pnpm build          # 前端类型检查 + 生产构建
 - **如何识别当前 PTA 题目**：通过手动触发读取当前活动页面，仅提取可见内容，不后台抓取、不自动提交；使用前请确认符合平台条款与学校规范。
 - **会直接给最终答案吗**：默认直接给出完整解答/代码（`ALLOW_FULL_ANSWER=true`）；设为 `false` 可强制只给提示或分步解析。代码只生成、不自动提交。
 - **Vue 页面空白 / 404**：先执行 `cd web && pnpm install && pnpm build`；生产模式由 FastAPI 托管 `web/dist`，构建产物不存在时根路径不会注册。
+- **为什么 7860 打不开 / 仍是旧界面**：旧版 Gradio 已移除，7860 不再监听；统一使用 http://127.0.0.1:8000 。
 - **前端开发时接口 404**：确认 API 已监听 `127.0.0.1:8000`；`pnpm dev` 会把 `/api` 代理到该端口。
 
 ## 贡献

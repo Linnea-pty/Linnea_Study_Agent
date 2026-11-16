@@ -9,7 +9,6 @@ description = "Linnea 多模型个人学习 Agent"
 requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.115,<1",
-    "gradio>=6.0,<7",
     "langchain>=1.4,<2",
     "langchain-openai>=1.0,<2",
     "langchain-tavily>=0.2,<1",
