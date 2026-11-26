@@ -38,6 +38,12 @@ class Settings:
     # 沙箱与历史目录
     file_root: Path
     history_dir: Path
+    # 网页题目识别（只读，不自动提交）
+    enable_web_tutor_tool: bool = True
+    web_tutor_cdp_url: str = "http://127.0.0.1:9222"
+    web_tutor_max_chars: int = 6000
+    # 完整答案：个人学习场景默认允许，可显式关闭以强制只给提示
+    allow_full_answer: bool = True
 
     @classmethod
     def from_env(cls) -> Settings:
@@ -61,6 +67,10 @@ class Settings:
             budget_limit=float(_env("BUDGET_LIMIT", "0")),
             file_root=Path(_env("AGENT_FILE_ROOT", str(PROJECT_ROOT / "sandbox"))),
             history_dir=Path(_env("AGENT_HISTORY_DIR", str(PROJECT_ROOT / "histories"))),
+            enable_web_tutor_tool=_as_bool(_env("ENABLE_WEB_TUTOR_TOOL", "true")),
+            web_tutor_cdp_url=_env("WEB_TUTOR_CDP_URL", "http://127.0.0.1:9222"),
+            web_tutor_max_chars=int(_env("WEB_TUTOR_MAX_CHARS", "6000")),
+            allow_full_answer=_as_bool(_env("ALLOW_FULL_ANSWER", "true")),
         )
 
 
